@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Emoji Racer</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    }
+    body {
+      margin: 0;
+      background: #0f172a;
+      color: #e2e8f0;
+      display: grid;
+      place-items: center;
+      min-height: 100vh;
+      padding: 1rem;
+    }
+    .app {
+      width: min(760px, 96vw);
+      background: #111827;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 1rem;
+    }
+    h1 { margin: 0 0 .5rem; }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .5rem;
+      align-items: center;
+      margin-bottom: .75rem;
+    }
+    select, button {
+      background: #1f2937;
+      color: #e2e8f0;
+      border: 1px solid #475569;
+      border-radius: 8px;
+      padding: .5rem .75rem;
+      font-size: 1rem;
+    }
+    canvas {
+      width: 100%;
+      max-width: 720px;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      background: #0b1020;
+      display: block;
+      margin: 0 auto .5rem;
+    }
+    .hint { margin: 0; color: #94a3b8; font-size: .95rem; }
+    .status { min-height: 1.4rem; margin: .25rem 0 0; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <h1>🏎️ Emoji Racer</h1>
+    <div class="controls">
+      <label for="character">Driver:</label>
+      <select id="character" aria-label="Choose driver"></select>
+      <button id="startBtn" type="button">Start Race</button>
+    </div>
+    <canvas id="track" width="720" height="420" aria-label="Race track"></canvas>
+    <p class="hint">Controls: Arrow keys or WASD. Emoji textures: 🌿 🌵 🧱 ☁️.</p>
+    <p class="status" id="status" aria-live="polite"></p>
+  </main>
+
+  <script>
+    const roster = [
+      { label: "Driver A (light skin)", emoji: "🧑🏻" },
+      { label: "Driver B (medium-light skin)", emoji: "🧑🏼" },
+      { label: "Driver C (medium skin)", emoji: "🧑🏽" },
+      { label: "Driver D (medium-dark skin)", emoji: "🧑🏾" },
+      { label: "Driver E (dark skin)", emoji: "🧑🏿" },
+      { label: "Robot driver", emoji: "🤖" },
+      { label: "Alien driver", emoji: "👽" }
+    ];
+
+    const canvas = document.getElementById("track");
+    const ctx = canvas.getContext("2d");
+    const select = document.getElementById("character");
+    const startBtn = document.getElementById("startBtn");
+    const status = document.getElementById("status");
+
+    roster.forEach((c, i) => {
+      const option = document.createElement("option");
+      option.value = i;
+      option.textContent = `${c.emoji} ${c.label}`;
+      select.appendChild(option);
+    });
+
+    const keys = new Set();
+    const obstacleTiles = ["🌿", "🌵", "🧱", "☁️"];
+    let player = { x: canvas.width / 2, y: canvas.height - 50, speed: 4 };
+    let finishY = 40;
+    let obstacles = [];
+    let selected = roster[0];
+    let running = false;
+
+    function resetRace() {
+      player = { x: canvas.width / 2, y: canvas.height - 50, speed: 4 };
+      selected = roster[Number(select.value)] || roster[0];
+      obstacles = Array.from({ length: 12 }, (_, i) => ({
+        x: 60 + Math.random() * (canvas.width - 120),
+        y: 90 + i * 24,
+        emoji: obstacleTiles[Math.floor(Math.random() * obstacleTiles.length)]
+      }));
+      status.textContent = "Race on! Good luck!";
+      running = true;
+    }
+
+    function drawTrack() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#0b1020";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = "#111827";
+      ctx.fillRect(100, 0, canvas.width - 200, canvas.height);
+
+      ctx.strokeStyle = "#334155";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(100, 0);
+      ctx.lineTo(100, canvas.height);
+      ctx.moveTo(canvas.width - 100, 0);
+      ctx.lineTo(canvas.width - 100, canvas.height);
+      ctx.stroke();
+
+      ctx.fillStyle = "#f8fafc";
+      ctx.font = "24px sans-serif";
+      ctx.fillText("🏁", canvas.width / 2 - 10, finishY);
+
+      ctx.font = "22px sans-serif";
+      obstacles.forEach((o) => ctx.fillText(o.emoji, o.x, o.y));
+      ctx.fillText(selected.emoji, player.x, player.y);
+    }
+
+    function movePlayer() {
+      const left = keys.has("ArrowLeft") || keys.has("a") || keys.has("A");
+      const right = keys.has("ArrowRight") || keys.has("d") || keys.has("D");
+      const up = keys.has("ArrowUp") || keys.has("w") || keys.has("W");
+      const down = keys.has("ArrowDown") || keys.has("s") || keys.has("S");
+
+      if (left) player.x -= player.speed;
+      if (right) player.x += player.speed;
+      if (up) player.y -= player.speed;
+      if (down) player.y += player.speed;
+
+      player.x = Math.max(100, Math.min(canvas.width - 120, player.x));
+      player.y = Math.max(30, Math.min(canvas.height - 20, player.y));
+    }
+
+    function intersectsObstacle() {
+      return obstacles.some((o) => Math.abs(player.x - o.x) < 18 && Math.abs(player.y - o.y) < 18);
+    }
+
+    function tick() {
+      if (running) {
+        movePlayer();
+        if (intersectsObstacle()) {
+          status.textContent = "Bump! You hit an obstacle. Press Start Race to retry.";
+          running = false;
+        } else if (player.y <= finishY + 6) {
+          status.textContent = `🎉 ${selected.emoji} wins!`;
+          running = false;
+        }
+      }
+      drawTrack();
+      requestAnimationFrame(tick);
+    }
+
+    window.addEventListener("keydown", (e) => keys.add(e.key));
+    window.addEventListener("keyup", (e) => keys.delete(e.key));
+    startBtn.addEventListener("click", resetRace);
+
+    resetRace();
+    tick();
+  </script>
+</body>
+</html>
