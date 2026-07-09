@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Emoji Racer</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    }
+    body {
+      margin: 0;
+      background: #0f172a;
+      color: #e2e8f0;
+      display: grid;
+      place-items: center;
+      min-height: 100vh;
+      padding: 1rem;
+    }
+    .app {
+      width: min(760px, 96vw);
+      background: #111827;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 1rem;
+    }
+    h1 { margin: 0 0 .5rem; }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .5rem;
+      align-items: center;
+      margin-bottom: .75rem;
+    }
+    select, button {
+      background: #1f2937;
+      color: #e2e8f0;
+      border: 1px solid #475569;
+      border-radius: 8px;
+      padding: .5rem .75rem;
+      font-size: 1rem;
+    }
+    canvas {
+      width: 100%;
+      max-width: 720px;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      background: #0b1020;
+      display: block;
+      margin: 0 auto .5rem;
+    }
+    .hint { margin: 0; color: #cbd5e1; font-size: .95rem; }
+    .status { min-height: 1.4rem; margin: .25rem 0 0; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <h1>🏎️ Emoji Racer</h1>
+    <div class="controls">
+      <label for="character">Driver:
+        <select id="character" aria-label="Choose driver"></select>
+      </label>
+      <button id="startBtn" type="button">Start Race</button>
+    </div>
+    <canvas id="track" width="720" height="420" aria-label="Race track"></canvas>
+    <p class="hint">Controls: Arrow keys or WASD. Obstacles: 🌿 🌵 🧱 ☁️.</p>
+    <p class="status" id="status" aria-live="polite"></p>
+  </main>
+
+  <script>
+    const roster = [
+      { label: "Track Star", emoji: "🧑🏻" },
+      { label: "Road Runner", emoji: "👩🏽" },
+      { label: "Turbo Rider", emoji: "👨🏾" },
+      { label: "Lightning Driver", emoji: "🧕🏿" },
+      { label: "Champion Racer", emoji: "👳🏼" },
+      { label: "Robot Driver", emoji: "🤖" },
+      { label: "Alien Driver", emoji: "👽" }
+    ];
+
+    const canvas = document.getElementById("track");
+    const ctx = canvas.getContext("2d");
+    const finishLine = "🏁";
+    const select = document.getElementById("character");
+    const startBtn = document.getElementById("startBtn");
+    const status = document.getElementById("status");
+
+    roster.forEach((c, i) => {
+      const option = document.createElement("option");
+      option.value = i;
+      option.textContent = `${c.emoji} ${c.label}`;
+      select.appendChild(option);
+    });
+
+    const DEFAULT_PLAYER_SPEED = 4;
+    const PLAYER_COLLISION_RADIUS = 8;
+    const OBSTACLE_COLLISION_RADIUS = 10;
+    const COLLISION_DISTANCE_SQUARED = (PLAYER_COLLISION_RADIUS + OBSTACLE_COLLISION_RADIUS) ** 2;
+    const TRACK_SIDE_MARGIN = 100;
+    const TRACK_TOP_MARGIN = 30;
+    const TRACK_BOTTOM_MARGIN = 20;
+    const PLAYER_START_OFFSET_FROM_BOTTOM = 50;
+    const FINISH_LINE_Y = 40;
+    const FINISH_LINE_TOLERANCE = 6;
+    const OBSTACLE_COUNT = 12;
+    const OBSTACLE_SIDE_MARGIN = 60;
+    const OBSTACLE_VERTICAL_START = 90;
+    const OBSTACLE_VERTICAL_SPACING = 24;
+    const FINISH_LINE_FONT = "24px sans-serif";
+    const ENTITY_FONT = "22px sans-serif";
+    const keys = new Set();
+    const obstacleTiles = ["🌿", "🌵", "🧱", "☁️"];
+    let player = createPlayer();
+    let finishY = FINISH_LINE_Y;
+    ctx.font = FINISH_LINE_FONT;
+    const finishLineX = (canvas.width - ctx.measureText(finishLine).width) / 2;
+    let obstacles = [];
+    let selected = roster[0];
+    let running = false;
+
+    function resetRace() {
+      player = createPlayer();
+      selected = roster[Number(select.value)] || roster[0];
+      obstacles = Array.from({ length: OBSTACLE_COUNT }, (_, i) => ({
+        x: OBSTACLE_SIDE_MARGIN + Math.random() * (canvas.width - (OBSTACLE_SIDE_MARGIN * 2)),
+        y: OBSTACLE_VERTICAL_START + i * OBSTACLE_VERTICAL_SPACING,
+        emoji: obstacleTiles[Math.floor(Math.random() * obstacleTiles.length)]
+      }));
+      status.textContent = "Race on! Good luck!";
+      running = true;
+    }
+
+    function drawTrack() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#0b1020";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = "#111827";
+      ctx.fillRect(TRACK_SIDE_MARGIN, 0, canvas.width - (TRACK_SIDE_MARGIN * 2), canvas.height);
+
+      ctx.strokeStyle = "#334155";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(TRACK_SIDE_MARGIN, 0);
+      ctx.lineTo(TRACK_SIDE_MARGIN, canvas.height);
+      ctx.moveTo(canvas.width - TRACK_SIDE_MARGIN, 0);
+      ctx.lineTo(canvas.width - TRACK_SIDE_MARGIN, canvas.height);
+      ctx.stroke();
+
+      ctx.fillStyle = "#f8fafc";
+      ctx.font = FINISH_LINE_FONT;
+      ctx.fillText(finishLine, finishLineX, finishY);
+
+      ctx.font = ENTITY_FONT;
+      obstacles.forEach((o) => ctx.fillText(o.emoji, o.x, o.y));
+      ctx.fillText(selected.emoji, player.x, player.y);
+    }
+
+    function movePlayer() {
+      const left = keys.has("ArrowLeft") || keys.has("a") || keys.has("A");
+      const right = keys.has("ArrowRight") || keys.has("d") || keys.has("D");
+      const up = keys.has("ArrowUp") || keys.has("w") || keys.has("W");
+      const down = keys.has("ArrowDown") || keys.has("s") || keys.has("S");
+
+      if (left) player.x -= player.speed;
+      if (right) player.x += player.speed;
+      if (up) player.y -= player.speed;
+      if (down) player.y += player.speed;
+
+      player.x = clamp(player.x, TRACK_SIDE_MARGIN, canvas.width - TRACK_SIDE_MARGIN);
+      player.y = clamp(player.y, TRACK_TOP_MARGIN, canvas.height - TRACK_BOTTOM_MARGIN);
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function createPlayer() {
+      return { x: canvas.width / 2, y: canvas.height - PLAYER_START_OFFSET_FROM_BOTTOM, speed: DEFAULT_PLAYER_SPEED };
+    }
+
+    function hasCollidedWithObstacle() {
+      return obstacles.some((obstacle) =>
+        (player.x - obstacle.x) ** 2 + (player.y - obstacle.y) ** 2 < COLLISION_DISTANCE_SQUARED
+      );
+    }
+
+    function tick() {
+      if (running) {
+        movePlayer();
+        if (hasCollidedWithObstacle()) {
+          status.textContent = "Bump! You hit an obstacle. Press Start Race to retry.";
+          running = false;
+        } else if (player.y <= finishY + FINISH_LINE_TOLERANCE) {
+          status.textContent = `🎉 ${selected.emoji} wins!`;
+          running = false;
+        }
+      }
+      drawTrack();
+      requestAnimationFrame(tick);
+    }
+
+    window.addEventListener("keydown", (e) => {
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+        e.preventDefault();
+      }
+      keys.add(e.key);
+    });
+    window.addEventListener("keyup", (e) => keys.delete(e.key));
+    startBtn.addEventListener("click", resetRace);
+
+    resetRace();
+    tick();
+  </script>
+</body>
+</html>
