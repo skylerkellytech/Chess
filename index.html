@@ -92,22 +92,30 @@
       select.appendChild(option);
     });
 
-    const PLAYER_SPEED = 4;
+    const DEFAULT_PLAYER_SPEED = 4;
     const COLLISION_RADIUS = 18;
+    const COLLISION_RADIUS_SQUARED = COLLISION_RADIUS ** 2;
+    const TRACK_SIDE_MARGIN = 100;
+    const TRACK_TOP_MARGIN = 30;
+    const TRACK_BOTTOM_MARGIN = 20;
+    const OBSTACLE_COUNT = 12;
+    const OBSTACLE_SIDE_MARGIN = 60;
+    const OBSTACLE_VERTICAL_START = 90;
+    const OBSTACLE_VERTICAL_SPACING = 24;
     const keys = new Set();
     const obstacleTiles = ["🌿", "🌵", "🧱", "☁️"];
-    let player = { x: canvas.width / 2, y: canvas.height - 50, speed: PLAYER_SPEED };
+    let player = { x: canvas.width / 2, y: canvas.height - 50, speed: DEFAULT_PLAYER_SPEED };
     let finishY = 40;
     let obstacles = [];
     let selected = roster[0];
     let running = false;
 
     function resetRace() {
-      player = { x: canvas.width / 2, y: canvas.height - 50, speed: PLAYER_SPEED };
+      player = { x: canvas.width / 2, y: canvas.height - 50, speed: DEFAULT_PLAYER_SPEED };
       selected = roster[Number(select.value)] || roster[0];
-      obstacles = Array.from({ length: 12 }, (_, i) => ({
-        x: 60 + Math.random() * (canvas.width - 120),
-        y: 90 + i * 24,
+      obstacles = Array.from({ length: OBSTACLE_COUNT }, (_, i) => ({
+        x: OBSTACLE_SIDE_MARGIN + Math.random() * (canvas.width - (OBSTACLE_SIDE_MARGIN * 2)),
+        y: OBSTACLE_VERTICAL_START + i * OBSTACLE_VERTICAL_SPACING,
         emoji: obstacleTiles[Math.floor(Math.random() * obstacleTiles.length)]
       }));
       status.textContent = "Race on! Good luck!";
@@ -120,15 +128,15 @@
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       ctx.fillStyle = "#111827";
-      ctx.fillRect(100, 0, canvas.width - 200, canvas.height);
+      ctx.fillRect(TRACK_SIDE_MARGIN, 0, canvas.width - (TRACK_SIDE_MARGIN * 2), canvas.height);
 
       ctx.strokeStyle = "#334155";
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(100, 0);
-      ctx.lineTo(100, canvas.height);
-      ctx.moveTo(canvas.width - 100, 0);
-      ctx.lineTo(canvas.width - 100, canvas.height);
+      ctx.moveTo(TRACK_SIDE_MARGIN, 0);
+      ctx.lineTo(TRACK_SIDE_MARGIN, canvas.height);
+      ctx.moveTo(canvas.width - TRACK_SIDE_MARGIN, 0);
+      ctx.lineTo(canvas.width - TRACK_SIDE_MARGIN, canvas.height);
       ctx.stroke();
 
       ctx.fillStyle = "#f8fafc";
@@ -151,14 +159,13 @@
       if (up) player.y -= player.speed;
       if (down) player.y += player.speed;
 
-      player.x = Math.max(100, Math.min(canvas.width - 100, player.x));
-      player.y = Math.max(30, Math.min(canvas.height - 20, player.y));
+      player.x = Math.max(TRACK_SIDE_MARGIN, Math.min(canvas.width - TRACK_SIDE_MARGIN, player.x));
+      player.y = Math.max(TRACK_TOP_MARGIN, Math.min(canvas.height - TRACK_BOTTOM_MARGIN, player.y));
     }
 
     function intersectsObstacle() {
-      const collisionRadiusSquared = COLLISION_RADIUS ** 2;
       return obstacles.some((obstacle) =>
-        (player.x - obstacle.x) ** 2 + (player.y - obstacle.y) ** 2 < collisionRadiusSquared
+        (player.x - obstacle.x) ** 2 + (player.y - obstacle.y) ** 2 < COLLISION_RADIUS_SQUARED
       );
     }
 
