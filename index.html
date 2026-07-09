@@ -129,9 +129,43 @@
     .leaderboard-entry.player {
       outline: 1px solid #f97316;
     }
+    .canvas-wrapper {
+      position: relative;
+    }
+    .touch-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      padding: .75rem .5rem .25rem;
+    }
+    .touch-btn {
+      flex: 1;
+      max-width: 140px;
+      height: 68px;
+      font-size: 2rem;
+      background: rgba(30, 41, 59, 0.9);
+      border: 2px solid #475569;
+      border-radius: 16px;
+      color: #f8fafc;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+      transition: background .1s, border-color .1s;
+    }
+    .touch-btn:active, .touch-btn.pressed {
+      background: rgba(249, 115, 22, 0.35);
+      border-color: #f97316;
+    }
     @media (max-width: 700px) {
       .race-layout {
         grid-template-columns: 1fr;
+      }
+      .touch-btn {
+        max-width: none;
+        height: 76px;
+        font-size: 2.4rem;
       }
     }
   </style>
@@ -147,15 +181,21 @@
       <button id="startBtn" type="button">Start Race</button>
     </div>
     <div class="race-layout">
-      <canvas id="track" width="420" height="640" aria-label="Race track"></canvas>
+      <div class="canvas-wrapper">
+        <canvas id="track" width="420" height="640" aria-label="Race track"></canvas>
+        <div class="touch-controls" id="touchControls" aria-label="Mobile steering">
+          <button class="touch-btn" id="leftBtn" type="button" aria-label="Steer left">◀</button>
+          <button class="touch-btn" id="rightBtn" type="button" aria-label="Steer right">▶</button>
+        </div>
+      </div>
       <aside class="panel">
         <section class="card">
           <h2>How to drive</h2>
           <ol>
             <li>Press <strong>Start Race</strong>.</li>
-            <li><strong>↑ / W</strong> — accelerate.</li>
-            <li><strong>↓ / S</strong> — brake.</li>
-            <li><strong>← → / A D</strong> — change lanes.</li>
+            <li>Your racer <strong>accelerates automatically</strong>.</li>
+            <li>Tap <strong>◀ ▶</strong> buttons (or <strong>← → / A D</strong>) to change lanes.</li>
+            <li>Hold <strong>↑ / W</strong> for full speed; <strong>↓ / S</strong> to brake.</li>
             <li>Dodge 🚧🪨🛢️🐄 — they slow you down!</li>
             <li>Collect ⚡⭐🍄 for a speed boost!</li>
           </ol>
@@ -376,14 +416,12 @@
 
     // ── Update logic ─────────────────────────────────────────────────────────
     function updatePlayer() {
+      // Auto-forward: always accelerate; keyboard Up/W still adds a tiny extra push
       const up   = keys.has("ArrowUp")   || keys.has("w");
       const down = keys.has("ArrowDown") || keys.has("s");
 
-      if (up) {
-        player.speed += P_ACCEL;
-      } else {
-        player.speed *= P_DRAG;
-      }
+      // Always accelerate; holding Up/W gives full accel, otherwise 70% auto-accel
+      player.speed += up ? P_ACCEL : P_ACCEL * 0.7;
       if (down) {
         player.speed -= P_BRAKE;
       }
@@ -715,6 +753,37 @@
       resetRace();
       tick();
     });
+
+    // ── Touch / click controls ────────────────────────────────────────────────
+    function addSteerButton(btnId, dir) {
+      const btn = document.getElementById(btnId);
+      if (!btn) return;
+
+      function steer() {
+        if (!running) return;
+        if (dir === -1) player.targetLane = clamp(player.targetLane - 1, 0, NUM_LANES - 1);
+        else            player.targetLane = clamp(player.targetLane + 1, 0, NUM_LANES - 1);
+      }
+
+      // Touch events (primary on mobile)
+      btn.addEventListener("touchstart", e => {
+        e.preventDefault();
+        btn.classList.add("pressed");
+        steer();
+      }, { passive: false });
+      btn.addEventListener("touchend", e => {
+        e.preventDefault();
+        btn.classList.remove("pressed");
+      }, { passive: false });
+
+      // Mouse events (desktop fallback)
+      btn.addEventListener("mousedown", () => { btn.classList.add("pressed");    steer(); });
+      btn.addEventListener("mouseup",   () => { btn.classList.remove("pressed"); });
+      btn.addEventListener("mouseleave",() => { btn.classList.remove("pressed"); });
+    }
+
+    addSteerButton("leftBtn",  -1);
+    addSteerButton("rightBtn", +1);
 
     // ── Init ─────────────────────────────────────────────────────────────────
     initSelect();
