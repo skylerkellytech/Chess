@@ -70,11 +70,11 @@
 
   <script>
     const roster = [
-      { label: "Track Star", emoji: "🧑" },
-      { label: "Road Runner", emoji: "👩" },
-      { label: "Turbo Rider", emoji: "👨" },
-      { label: "Lightning Driver", emoji: "🧕" },
-      { label: "Champion Racer", emoji: "👳" },
+      { label: "Track Star", emoji: "🧑🏻" },
+      { label: "Road Runner", emoji: "👩🏽" },
+      { label: "Turbo Rider", emoji: "👨🏾" },
+      { label: "Lightning Driver", emoji: "🧕🏿" },
+      { label: "Champion Racer", emoji: "👳🏼" },
       { label: "Robot Driver", emoji: "🤖" },
       { label: "Alien Driver", emoji: "👽" }
     ];
@@ -107,11 +107,13 @@
     const OBSTACLE_SIDE_MARGIN = 60;
     const OBSTACLE_VERTICAL_START = 90;
     const OBSTACLE_VERTICAL_SPACING = 24;
+    const FINISH_LINE_FONT = "24px sans-serif";
+    const ENTITY_FONT = "22px sans-serif";
     const keys = new Set();
     const obstacleTiles = ["🌿", "🌵", "🧱", "☁️"];
     let player = createPlayer();
     let finishY = FINISH_LINE_Y;
-    ctx.font = "24px sans-serif";
+    ctx.font = FINISH_LINE_FONT;
     const finishLineX = (canvas.width - ctx.measureText(finishLine).width) / 2;
     let obstacles = [];
     let selected = roster[0];
@@ -147,10 +149,10 @@
       ctx.stroke();
 
       ctx.fillStyle = "#f8fafc";
-      ctx.font = "24px sans-serif";
+      ctx.font = FINISH_LINE_FONT;
       ctx.fillText(finishLine, finishLineX, finishY);
 
-      ctx.font = "22px sans-serif";
+      ctx.font = ENTITY_FONT;
       obstacles.forEach((o) => ctx.fillText(o.emoji, o.x, o.y));
       ctx.fillText(selected.emoji, player.x, player.y);
     }
