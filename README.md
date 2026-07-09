@@ -1,4 +1,4 @@
-# Racing
+# Emoji Racer
 
 A small HTML5 emoji racing game.
 
