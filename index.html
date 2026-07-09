@@ -70,11 +70,11 @@
 
   <script>
     const roster = [
-      { label: "Racer One", emoji: "🧑🏻" },
-      { label: "Racer Two", emoji: "🧑🏼" },
-      { label: "Racer Three", emoji: "🧑🏽" },
-      { label: "Racer Four", emoji: "🧑🏾" },
-      { label: "Racer Five", emoji: "🧑🏿" },
+      { label: "Track Star", emoji: "🧑🏻" },
+      { label: "Road Runner", emoji: "🧑🏼" },
+      { label: "Turbo Rider", emoji: "🧑🏽" },
+      { label: "Lightning Driver", emoji: "🧑🏾" },
+      { label: "Champion Racer", emoji: "🧑🏿" },
       { label: "Robot driver", emoji: "🤖" },
       { label: "Alien driver", emoji: "👽" }
     ];
@@ -93,15 +93,15 @@
     });
 
     const DEFAULT_PLAYER_SPEED = 4;
-    const COLLISION_RADIUS = 18;
-    const COLLISION_RADIUS_SQUARED = COLLISION_RADIUS ** 2;
+    const PLAYER_COLLISION_RADIUS = 8;
+    const OBSTACLE_COLLISION_RADIUS = 10;
+    const COLLISION_DISTANCE_SQUARED = (PLAYER_COLLISION_RADIUS + OBSTACLE_COLLISION_RADIUS) ** 2;
     const TRACK_SIDE_MARGIN = 100;
     const TRACK_TOP_MARGIN = 30;
     const TRACK_BOTTOM_MARGIN = 20;
     const PLAYER_START_OFFSET_FROM_BOTTOM = 50;
     const FINISH_LINE_Y = 40;
     const FINISH_LINE_TOLERANCE = 6;
-    const FINISH_LINE_X_OFFSET = 10;
     const OBSTACLE_COUNT = 12;
     const OBSTACLE_SIDE_MARGIN = 60;
     const OBSTACLE_VERTICAL_START = 90;
@@ -145,7 +145,9 @@
 
       ctx.fillStyle = "#f8fafc";
       ctx.font = "24px sans-serif";
-      ctx.fillText("🏁", canvas.width / 2 - FINISH_LINE_X_OFFSET, finishY);
+      const finishLine = "🏁";
+      const finishLineX = (canvas.width - ctx.measureText(finishLine).width) / 2;
+      ctx.fillText(finishLine, finishLineX, finishY);
 
       ctx.font = "22px sans-serif";
       obstacles.forEach((o) => ctx.fillText(o.emoji, o.x, o.y));
@@ -177,7 +179,7 @@
 
     function intersectsObstacle() {
       return obstacles.some((obstacle) =>
-        (player.x - obstacle.x) ** 2 + (player.y - obstacle.y) ** 2 < COLLISION_RADIUS_SQUARED
+        (player.x - obstacle.x) ** 2 + (player.y - obstacle.y) ** 2 < COLLISION_DISTANCE_SQUARED
       );
     }
 
