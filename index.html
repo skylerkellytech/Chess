@@ -200,16 +200,20 @@
       bannerY: 88
     };
     const TOTAL_LAPS = 3;
+    const AI_OPPONENT_COUNT = 3;
     const PLAYER_ACCEL = 0.00005;
     const PLAYER_BRAKE = 0.00008;
     const PLAYER_DRAG = 0.992;
     const PLAYER_MAX_SPEED = 0.00228;
+    const PLAYER_CAR_FONT = "34px sans-serif";
+    const AI_CAR_FONT = "30px sans-serif";
     const AI_BASE_SPEED = 0.00146;
     const AI_SPEED_VARIANCE = 0.00026;
     const AI_MIN_SPEED = 0.0012;
     const AI_MAX_SPEED_BUFFER = 0.00018;
     const AI_CHANGE_MIN = 80;
     const AI_CHANGE_MAX = 200;
+    const AI_LANE_CHANGES = [-1, 0, 1];
     const TWO_PI = Math.PI * 2;
     const START_ANGLE = -Math.PI / 2;
 
@@ -240,6 +244,13 @@
     function normalizeLapProgress(progress) {
       return ((progress % 1) + 1) % 1;
     }
+
+    const formatPlace = (place) => {
+      if (place % 10 === 1 && place % 100 !== 11) return `${place}st`;
+      if (place % 10 === 2 && place % 100 !== 12) return `${place}nd`;
+      if (place % 10 === 3 && place % 100 !== 13) return `${place}rd`;
+      return `${place}th`;
+    };
 
     function laneMetrics(laneValue) {
       const t = (laneValue + 0.5) / TRACK.laneCount;
@@ -282,7 +293,8 @@
 
     function createField() {
       const selected = roster[Number(select.value)] || roster[0];
-      const opponents = shuffle(roster.filter((racer) => racer.label !== selected.label)).slice(0, 3);
+      const opponents = shuffle(roster.filter((racer) => racer.label !== selected.label)).slice(0, AI_OPPONENT_COUNT);
+      const startingLanes = shuffle(Array.from({ length: TRACK.laneCount }, (_, index) => index));
       const lineup = [
         createRacer(selected, {
           isPlayer: true,
@@ -295,11 +307,12 @@
       ];
 
       opponents.forEach((profile, index) => {
-        const lane = index % TRACK.laneCount;
+        const lane = startingLanes[index % startingLanes.length];
+        const stagger = Math.floor(index / startingLanes.length) * 0.05;
         lineup.push(
           createRacer(profile, {
             lane,
-            progress: 0,
+            progress: -stagger,
             speed: AI_BASE_SPEED + Math.random() * AI_SPEED_VARIANCE,
             maxSpeed: AI_BASE_SPEED + AI_SPEED_VARIANCE,
             aiTargetSpeed: AI_BASE_SPEED + Math.random() * AI_SPEED_VARIANCE,
@@ -349,7 +362,11 @@
       racer.aiTimer -= 1;
       if (racer.aiTimer <= 0) {
         racer.aiTimer = AI_CHANGE_MIN + Math.floor(Math.random() * (AI_CHANGE_MAX - AI_CHANGE_MIN));
-        racer.targetLane = clamp(racer.targetLane + [-1, 0, 1][Math.floor(Math.random() * 3)], 0, TRACK.laneCount - 1);
+        racer.targetLane = clamp(
+          racer.targetLane + AI_LANE_CHANGES[Math.floor(Math.random() * AI_LANE_CHANGES.length)],
+          0,
+          TRACK.laneCount - 1
+        );
         racer.aiTargetSpeed = AI_BASE_SPEED + Math.random() * AI_SPEED_VARIANCE;
       }
 
@@ -360,13 +377,6 @@
 
     function getStandings() {
       return [...racers].sort((left, right) => right.progress - left.progress);
-    }
-
-    function formatPlace(place) {
-      if (place % 10 === 1 && place % 100 !== 11) return `${place}st`;
-      if (place % 10 === 2 && place % 100 !== 12) return `${place}nd`;
-      if (place % 10 === 3 && place % 100 !== 13) return `${place}rd`;
-      return `${place}th`;
     }
 
     function updateStatus() {
@@ -483,7 +493,7 @@
       ctx.save();
       ctx.translate(position.x, position.y);
       ctx.rotate(position.angle + Math.PI / 2);
-      ctx.font = racer.isPlayer ? "34px sans-serif" : "30px sans-serif";
+      ctx.font = racer.isPlayer ? PLAYER_CAR_FONT : AI_CAR_FONT;
       ctx.fillText(racer.carEmoji, 0, 0);
       ctx.restore();
 
