@@ -98,20 +98,23 @@
     const TRACK_SIDE_MARGIN = 100;
     const TRACK_TOP_MARGIN = 30;
     const TRACK_BOTTOM_MARGIN = 20;
+    const PLAYER_START_OFFSET_FROM_BOTTOM = 50;
+    const FINISH_LINE_Y = 40;
+    const FINISH_LINE_TOLERANCE = 6;
     const OBSTACLE_COUNT = 12;
     const OBSTACLE_SIDE_MARGIN = 60;
     const OBSTACLE_VERTICAL_START = 90;
     const OBSTACLE_VERTICAL_SPACING = 24;
     const keys = new Set();
     const obstacleTiles = ["🌿", "🌵", "🧱", "☁️"];
-    let player = { x: canvas.width / 2, y: canvas.height - 50, speed: DEFAULT_PLAYER_SPEED };
-    let finishY = 40;
+    let player = { x: canvas.width / 2, y: canvas.height - PLAYER_START_OFFSET_FROM_BOTTOM, speed: DEFAULT_PLAYER_SPEED };
+    let finishY = FINISH_LINE_Y;
     let obstacles = [];
     let selected = roster[0];
     let running = false;
 
     function resetRace() {
-      player = { x: canvas.width / 2, y: canvas.height - 50, speed: DEFAULT_PLAYER_SPEED };
+      player = { x: canvas.width / 2, y: canvas.height - PLAYER_START_OFFSET_FROM_BOTTOM, speed: DEFAULT_PLAYER_SPEED };
       selected = roster[Number(select.value)] || roster[0];
       obstacles = Array.from({ length: OBSTACLE_COUNT }, (_, i) => ({
         x: OBSTACLE_SIDE_MARGIN + Math.random() * (canvas.width - (OBSTACLE_SIDE_MARGIN * 2)),
@@ -175,7 +178,7 @@
         if (intersectsObstacle()) {
           status.textContent = "Bump! You hit an obstacle. Press Start Race to retry.";
           running = false;
-        } else if (player.y <= finishY + 6) {
+        } else if (player.y <= finishY + FINISH_LINE_TOLERANCE) {
           status.textContent = `🎉 ${selected.emoji} wins!`;
           running = false;
         }
