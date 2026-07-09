@@ -3,211 +3,548 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Emoji Racer</title>
+  <title>Emoji Speedway</title>
   <style>
     :root {
       color-scheme: dark;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * {
+      box-sizing: border-box;
     }
     body {
       margin: 0;
-      background: #0f172a;
-      color: #e2e8f0;
+      min-height: 100vh;
       display: grid;
       place-items: center;
-      min-height: 100vh;
       padding: 1rem;
+      background:
+        radial-gradient(circle at top, #1e293b 0%, #0f172a 55%, #020617 100%);
+      color: #e2e8f0;
     }
     .app {
-      width: min(760px, 96vw);
-      background: #111827;
+      width: min(960px, 96vw);
+      background: rgba(15, 23, 42, 0.92);
       border: 1px solid #334155;
-      border-radius: 12px;
+      border-radius: 20px;
       padding: 1rem;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.45);
     }
-    h1 { margin: 0 0 .5rem; }
+    h1 {
+      margin: 0 0 .35rem;
+      font-size: clamp(1.8rem, 3vw, 2.4rem);
+    }
+    .subtitle {
+      margin: 0 0 1rem;
+      color: #cbd5e1;
+    }
     .controls {
       display: flex;
       flex-wrap: wrap;
-      gap: .5rem;
+      gap: .75rem;
       align-items: center;
-      margin-bottom: .75rem;
+      margin-bottom: 1rem;
+    }
+    label {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      font-weight: 600;
+      color: #f8fafc;
     }
     select, button {
-      background: #1f2937;
+      background: #1e293b;
       color: #e2e8f0;
       border: 1px solid #475569;
-      border-radius: 8px;
-      padding: .5rem .75rem;
+      border-radius: 10px;
+      padding: .65rem .9rem;
       font-size: 1rem;
+    }
+    button {
+      cursor: pointer;
+      font-weight: 700;
+      background: linear-gradient(135deg, #f97316, #ef4444);
+      border-color: #fb7185;
+    }
+    button:hover {
+      filter: brightness(1.05);
+    }
+    .race-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 240px;
+      gap: 1rem;
+      align-items: start;
     }
     canvas {
       width: 100%;
-      max-width: 720px;
       border: 1px solid #334155;
-      border-radius: 8px;
-      background: #0b1020;
+      border-radius: 16px;
+      background: #14532d;
       display: block;
-      margin: 0 auto .5rem;
     }
-    .hint { margin: 0; color: #cbd5e1; font-size: .95rem; }
-    .status { min-height: 1.4rem; margin: .25rem 0 0; font-weight: 600; }
+    .panel {
+      display: grid;
+      gap: .75rem;
+    }
+    .card {
+      border: 1px solid #334155;
+      border-radius: 16px;
+      padding: .85rem;
+      background: rgba(15, 23, 42, 0.88);
+    }
+    .card h2 {
+      margin: 0 0 .5rem;
+      font-size: 1rem;
+    }
+    .card p, .card ol {
+      margin: 0;
+      color: #cbd5e1;
+      line-height: 1.5;
+    }
+    .card ol {
+      padding-left: 1.2rem;
+    }
+    .status {
+      min-height: 1.5rem;
+      font-weight: 700;
+      color: #fef08a;
+    }
+    .leaderboard {
+      display: grid;
+      gap: .45rem;
+    }
+    .leaderboard-entry {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: .5rem;
+      padding: .45rem .55rem;
+      border-radius: 10px;
+      background: rgba(30, 41, 59, 0.9);
+      font-size: .95rem;
+    }
+    .leaderboard-entry strong {
+      color: #f8fafc;
+    }
+    .leaderboard-entry.player {
+      outline: 1px solid #f97316;
+    }
+    @media (max-width: 860px) {
+      .race-layout {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body>
   <main class="app">
-    <h1>🏎️ Emoji Racer</h1>
+    <h1>🏁 Emoji Speedway</h1>
+    <p class="subtitle">Pick your racer, line up on the oval track, and beat the AI drivers over three laps.</p>
     <div class="controls">
-      <label for="character">Driver:
-        <select id="character" aria-label="Choose driver"></select>
+      <label for="character">Racer:
+        <select id="character" aria-label="Choose your racer"></select>
       </label>
       <button id="startBtn" type="button">Start Race</button>
     </div>
-    <canvas id="track" width="720" height="420" aria-label="Race track"></canvas>
-    <p class="hint">Controls: Arrow keys or WASD. Obstacles: 🌿 🌵 🧱 ☁️.</p>
-    <p class="status" id="status" aria-live="polite"></p>
+    <div class="race-layout">
+      <canvas id="track" width="860" height="560" aria-label="Race track"></canvas>
+      <aside class="panel">
+        <section class="card">
+          <h2>How to drive</h2>
+          <ol>
+            <li>Press <strong>Start Race</strong>.</li>
+            <li>Use <strong>Arrow Up / W</strong> to accelerate.</li>
+            <li>Use <strong>Arrow Down / S</strong> to brake.</li>
+            <li>Use <strong>Arrow Left / Right</strong> or <strong>A / D</strong> to change lanes.</li>
+          </ol>
+        </section>
+        <section class="card">
+          <h2>Race status</h2>
+          <p class="status" id="status" aria-live="polite"></p>
+        </section>
+        <section class="card">
+          <h2>Leaderboard</h2>
+          <div class="leaderboard" id="leaderboard"></div>
+        </section>
+      </aside>
+    </div>
   </main>
 
   <script>
     const roster = [
-      { label: "Track Star", emoji: "🧑🏻" },
-      { label: "Road Runner", emoji: "👩🏽" },
-      { label: "Turbo Rider", emoji: "👨🏾" },
-      { label: "Lightning Driver", emoji: "🧕🏿" },
-      { label: "Champion Racer", emoji: "👳🏼" },
-      { label: "Robot Driver", emoji: "🤖" },
-      { label: "Alien Driver", emoji: "👽" }
+      { label: "Comet Cruz", driverEmoji: "🧑🏻", carEmoji: "🏎️", accent: "#f97316" },
+      { label: "Nitro Nova", driverEmoji: "👩🏽", carEmoji: "🚗", accent: "#38bdf8" },
+      { label: "Blaze Banks", driverEmoji: "👨🏾", carEmoji: "🚕", accent: "#facc15" },
+      { label: "Dash Dune", driverEmoji: "🧕🏿", carEmoji: "🚙", accent: "#34d399" },
+      { label: "Rocket Rai", driverEmoji: "👳🏼", carEmoji: "🛻", accent: "#c084fc" },
+      { label: "Mecha Miles", driverEmoji: "🤖", carEmoji: "🏎️", accent: "#94a3b8" },
+      { label: "Orbit Ozz", driverEmoji: "👽", carEmoji: "🚗", accent: "#4ade80" }
     ];
 
     const canvas = document.getElementById("track");
     const ctx = canvas.getContext("2d");
-    const finishLine = "🏁";
     const select = document.getElementById("character");
     const startBtn = document.getElementById("startBtn");
     const status = document.getElementById("status");
+    const leaderboard = document.getElementById("leaderboard");
 
-    roster.forEach((c, i) => {
+    const TRACK = {
+      cx: canvas.width / 2,
+      cy: canvas.height / 2,
+      outerRx: 305,
+      outerRy: 215,
+      innerRx: 165,
+      innerRy: 80,
+      laneCount: 3,
+      laneChangeSpeed: 0.13,
+      bannerY: 88
+    };
+    const TOTAL_LAPS = 3;
+    const PLAYER_ACCEL = 0.00005;
+    const PLAYER_BRAKE = 0.00008;
+    const PLAYER_DRAG = 0.992;
+    const PLAYER_MAX_SPEED = 0.00228;
+    const AI_BASE_SPEED = 0.00146;
+    const AI_SPEED_VARIANCE = 0.00026;
+    const AI_CHANGE_MIN = 80;
+    const AI_CHANGE_MAX = 200;
+    const TWO_PI = Math.PI * 2;
+    const START_ANGLE = -Math.PI / 2;
+
+    const keys = new Set();
+    let racers = [];
+    let running = false;
+
+    roster.forEach((racer, index) => {
       const option = document.createElement("option");
-      option.value = i;
-      option.textContent = `${c.emoji} ${c.label}`;
+      option.value = index;
+      option.textContent = `${racer.driverEmoji} ${racer.label} ${racer.carEmoji}`;
       select.appendChild(option);
     });
 
-    const DEFAULT_PLAYER_SPEED = 4;
-    const PLAYER_COLLISION_RADIUS = 8;
-    const OBSTACLE_COLLISION_RADIUS = 10;
-    const COLLISION_DISTANCE_SQUARED = (PLAYER_COLLISION_RADIUS + OBSTACLE_COLLISION_RADIUS) ** 2;
-    const TRACK_SIDE_MARGIN = 100;
-    const TRACK_TOP_MARGIN = 30;
-    const TRACK_BOTTOM_MARGIN = 20;
-    const PLAYER_START_OFFSET_FROM_BOTTOM = 50;
-    const FINISH_LINE_Y = 40;
-    const FINISH_LINE_TOLERANCE = 6;
-    const OBSTACLE_COUNT = 12;
-    const OBSTACLE_SIDE_MARGIN = 60;
-    const OBSTACLE_VERTICAL_START = 90;
-    const OBSTACLE_VERTICAL_SPACING = 24;
-    const FINISH_LINE_FONT = "24px sans-serif";
-    const ENTITY_FONT = "22px sans-serif";
-    const keys = new Set();
-    const obstacleTiles = ["🌿", "🌵", "🧱", "☁️"];
-    let player = createPlayer();
-    let finishY = FINISH_LINE_Y;
-    ctx.font = FINISH_LINE_FONT;
-    const finishLineX = (canvas.width - ctx.measureText(finishLine).width) / 2;
-    let obstacles = [];
-    let selected = roster[0];
-    let running = false;
-
-    function resetRace() {
-      player = createPlayer();
-      selected = roster[Number(select.value)] || roster[0];
-      obstacles = Array.from({ length: OBSTACLE_COUNT }, (_, i) => ({
-        x: OBSTACLE_SIDE_MARGIN + Math.random() * (canvas.width - (OBSTACLE_SIDE_MARGIN * 2)),
-        y: OBSTACLE_VERTICAL_START + i * OBSTACLE_VERTICAL_SPACING,
-        emoji: obstacleTiles[Math.floor(Math.random() * obstacleTiles.length)]
-      }));
-      status.textContent = "Race on! Good luck!";
-      running = true;
-    }
-
-    function drawTrack() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = "#0b1020";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      ctx.fillStyle = "#111827";
-      ctx.fillRect(TRACK_SIDE_MARGIN, 0, canvas.width - (TRACK_SIDE_MARGIN * 2), canvas.height);
-
-      ctx.strokeStyle = "#334155";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(TRACK_SIDE_MARGIN, 0);
-      ctx.lineTo(TRACK_SIDE_MARGIN, canvas.height);
-      ctx.moveTo(canvas.width - TRACK_SIDE_MARGIN, 0);
-      ctx.lineTo(canvas.width - TRACK_SIDE_MARGIN, canvas.height);
-      ctx.stroke();
-
-      ctx.fillStyle = "#f8fafc";
-      ctx.font = FINISH_LINE_FONT;
-      ctx.fillText(finishLine, finishLineX, finishY);
-
-      ctx.font = ENTITY_FONT;
-      obstacles.forEach((o) => ctx.fillText(o.emoji, o.x, o.y));
-      ctx.fillText(selected.emoji, player.x, player.y);
-    }
-
-    function movePlayer() {
-      const left = keys.has("ArrowLeft") || keys.has("a") || keys.has("A");
-      const right = keys.has("ArrowRight") || keys.has("d") || keys.has("D");
-      const up = keys.has("ArrowUp") || keys.has("w") || keys.has("W");
-      const down = keys.has("ArrowDown") || keys.has("s") || keys.has("S");
-
-      if (left) player.x -= player.speed;
-      if (right) player.x += player.speed;
-      if (up) player.y -= player.speed;
-      if (down) player.y += player.speed;
-
-      player.x = clamp(player.x, TRACK_SIDE_MARGIN, canvas.width - TRACK_SIDE_MARGIN);
-      player.y = clamp(player.y, TRACK_TOP_MARGIN, canvas.height - TRACK_BOTTOM_MARGIN);
+    function shuffle(list) {
+      const copy = [...list];
+      for (let i = copy.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
     }
 
     function clamp(value, min, max) {
       return Math.max(min, Math.min(max, value));
     }
 
-    function createPlayer() {
-      return { x: canvas.width / 2, y: canvas.height - PLAYER_START_OFFSET_FROM_BOTTOM, speed: DEFAULT_PLAYER_SPEED };
+    function normalizeLapProgress(progress) {
+      return ((progress % 1) + 1) % 1;
     }
 
-    function hasCollidedWithObstacle() {
-      return obstacles.some((obstacle) =>
-        (player.x - obstacle.x) ** 2 + (player.y - obstacle.y) ** 2 < COLLISION_DISTANCE_SQUARED
-      );
+    function laneMetrics(laneValue) {
+      const t = (laneValue + 0.5) / TRACK.laneCount;
+      return {
+        rx: TRACK.outerRx - t * (TRACK.outerRx - TRACK.innerRx),
+        ry: TRACK.outerRy - t * (TRACK.outerRy - TRACK.innerRy)
+      };
+    }
+
+    function laneFromAngle(angle) {
+      const normalized = normalizeLapProgress(angle / TWO_PI);
+      return START_ANGLE + normalized * TWO_PI;
+    }
+
+    function getRacerPosition(racer) {
+      const lane = laneMetrics(racer.visualLane);
+      const angle = laneFromAngle(racer.progress);
+      return {
+        x: TRACK.cx + lane.rx * Math.cos(angle),
+        y: TRACK.cy + lane.ry * Math.sin(angle),
+        angle
+      };
+    }
+
+    function createRacer(profile, options) {
+      return {
+        ...profile,
+        isPlayer: Boolean(options.isPlayer),
+        lane: options.lane,
+        targetLane: options.lane,
+        visualLane: options.lane,
+        progress: options.progress,
+        speed: options.speed,
+        maxSpeed: options.maxSpeed,
+        accel: options.accel || 0,
+        aiTargetSpeed: options.aiTargetSpeed || 0,
+        aiTimer: options.aiTimer || 0
+      };
+    }
+
+    function createField() {
+      const selected = roster[Number(select.value)] || roster[0];
+      const opponents = shuffle(roster.filter((racer) => racer.label !== selected.label)).slice(0, 3);
+      const lineup = [
+        createRacer(selected, {
+          isPlayer: true,
+          lane: 1,
+          progress: 0,
+          speed: 0,
+          maxSpeed: PLAYER_MAX_SPEED,
+          accel: PLAYER_ACCEL
+        })
+      ];
+
+      opponents.forEach((profile, index) => {
+        const lane = index % TRACK.laneCount;
+        lineup.push(
+          createRacer(profile, {
+            lane,
+            progress: 0,
+            speed: AI_BASE_SPEED + Math.random() * AI_SPEED_VARIANCE,
+            maxSpeed: AI_BASE_SPEED + AI_SPEED_VARIANCE,
+            aiTargetSpeed: AI_BASE_SPEED + Math.random() * AI_SPEED_VARIANCE,
+            aiTimer: AI_CHANGE_MIN + Math.floor(Math.random() * (AI_CHANGE_MAX - AI_CHANGE_MIN))
+          })
+        );
+      });
+
+      return lineup;
+    }
+
+    function resetRace() {
+      racers = createField();
+      running = true;
+      status.textContent = "Green flag! Build speed and race the AI to the finish.";
+      updateLeaderboard();
+      drawScene();
+    }
+
+    function steerPlayer(direction) {
+      const player = racers.find((racer) => racer.isPlayer);
+      if (!player || !running) {
+        return;
+      }
+      player.targetLane = clamp(player.targetLane + direction, 0, TRACK.laneCount - 1);
+    }
+
+    function updatePlayer(player) {
+      const accelerating = keys.has("ArrowUp") || keys.has("w");
+      const braking = keys.has("ArrowDown") || keys.has("s");
+
+      if (accelerating) {
+        player.speed += player.accel;
+      } else {
+        player.speed *= PLAYER_DRAG;
+      }
+
+      if (braking) {
+        player.speed -= PLAYER_BRAKE;
+      }
+
+      player.speed = clamp(player.speed, 0, player.maxSpeed);
+      player.progress += player.speed;
+    }
+
+    function updateAi(racer) {
+      racer.aiTimer -= 1;
+      if (racer.aiTimer <= 0) {
+        racer.aiTimer = AI_CHANGE_MIN + Math.floor(Math.random() * (AI_CHANGE_MAX - AI_CHANGE_MIN));
+        racer.targetLane = clamp(racer.targetLane + [-1, 0, 1][Math.floor(Math.random() * 3)], 0, TRACK.laneCount - 1);
+        racer.aiTargetSpeed = AI_BASE_SPEED + Math.random() * AI_SPEED_VARIANCE;
+      }
+
+      racer.speed += (racer.aiTargetSpeed - racer.speed) * 0.015;
+      racer.speed = clamp(racer.speed, 0.0012, racer.maxSpeed + 0.00018);
+      racer.progress += racer.speed;
+    }
+
+    function getStandings() {
+      return [...racers].sort((left, right) => right.progress - left.progress);
+    }
+
+    function formatPlace(place) {
+      if (place % 10 === 1 && place % 100 !== 11) return `${place}st`;
+      if (place % 10 === 2 && place % 100 !== 12) return `${place}nd`;
+      if (place % 10 === 3 && place % 100 !== 13) return `${place}rd`;
+      return `${place}th`;
+    }
+
+    function updateStatus() {
+      const standings = getStandings();
+      const player = standings.find((racer) => racer.isPlayer);
+      if (!player) {
+        return;
+      }
+
+      const place = standings.indexOf(player) + 1;
+      const lap = clamp(Math.floor(player.progress) + 1, 1, TOTAL_LAPS);
+      status.textContent = `Lap ${lap}/${TOTAL_LAPS} • ${formatPlace(place)} place • Speed ${Math.round((player.speed / PLAYER_MAX_SPEED) * 100)}%`;
+    }
+
+    function updateLeaderboard() {
+      const standings = getStandings();
+      leaderboard.innerHTML = "";
+
+      standings.forEach((racer, index) => {
+        const entry = document.createElement("div");
+        entry.className = `leaderboard-entry${racer.isPlayer ? " player" : ""}`;
+        entry.innerHTML = `<strong>${index + 1}. ${racer.driverEmoji} ${racer.carEmoji}</strong><span>${racer.label} • Lap ${clamp(Math.floor(racer.progress) + 1, 1, TOTAL_LAPS)}</span>`;
+        leaderboard.appendChild(entry);
+      });
+    }
+
+    function checkForWinner() {
+      const winner = racers.find((racer) => racer.progress >= TOTAL_LAPS);
+      if (!winner) {
+        return false;
+      }
+
+      running = false;
+      status.textContent = winner.isPlayer
+        ? `🏆 ${winner.driverEmoji} ${winner.label} wins the race!`
+        : `💨 ${winner.driverEmoji} ${winner.label} beat you to the flag. Press Start Race for a rematch.`;
+      updateLeaderboard();
+      return true;
+    }
+
+    function drawTrack() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#166534";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = "#14532d";
+      ctx.fillRect(0, TRACK.bannerY, canvas.width, canvas.height - TRACK.bannerY);
+
+      ctx.fillStyle = "#475569";
+      ctx.beginPath();
+      ctx.ellipse(TRACK.cx, TRACK.cy, TRACK.outerRx, TRACK.outerRy, 0, 0, TWO_PI);
+      ctx.fill();
+
+      ctx.fillStyle = "#14532d";
+      ctx.beginPath();
+      ctx.ellipse(TRACK.cx, TRACK.cy, TRACK.innerRx, TRACK.innerRy, 0, 0, TWO_PI);
+      ctx.fill();
+
+      ctx.strokeStyle = "#cbd5e1";
+      ctx.lineWidth = 3;
+      [0.5, 1.5].forEach((laneIndex) => {
+        const lane = laneMetrics(laneIndex);
+        ctx.setLineDash([16, 16]);
+        ctx.beginPath();
+        ctx.ellipse(TRACK.cx, TRACK.cy, lane.rx, lane.ry, 0, 0, TWO_PI);
+        ctx.stroke();
+      });
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = "#0f172a";
+      ctx.fillRect(TRACK.cx - 145, TRACK.cy - 38, 290, 76);
+      ctx.fillStyle = "#94a3b8";
+      ctx.font = "700 18px system-ui";
+      ctx.textAlign = "center";
+      ctx.fillText("INFIELD", TRACK.cx, TRACK.cy + 6);
+
+      const startX = TRACK.cx - 20;
+      const stripeTop = TRACK.cy - TRACK.outerRy;
+      const stripeHeight = TRACK.outerRy - TRACK.innerRy;
+      const blockSize = 10;
+      for (let row = 0; row < Math.ceil(stripeHeight / blockSize); row += 1) {
+        for (let col = 0; col < 4; col += 1) {
+          ctx.fillStyle = (row + col) % 2 === 0 ? "#f8fafc" : "#0f172a";
+          ctx.fillRect(startX + col * blockSize, stripeTop + row * blockSize, blockSize, blockSize);
+        }
+      }
+
+      ctx.fillStyle = "#f8fafc";
+      ctx.font = "700 24px system-ui";
+      ctx.fillText("EMOJI SPEEDWAY", TRACK.cx, 44);
+      ctx.font = "600 15px system-ui";
+      ctx.fillText("3 laps • player vs AI", TRACK.cx, 68);
+    }
+
+    function drawRacer(racer) {
+      const position = getRacerPosition(racer);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
+      ctx.fillStyle = racer.accent;
+      ctx.beginPath();
+      ctx.arc(position.x, position.y + 2, 20, 0, TWO_PI);
+      ctx.globalAlpha = 0.22;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+
+      ctx.font = "22px sans-serif";
+      ctx.fillText(racer.driverEmoji, position.x, position.y - 28);
+
+      ctx.save();
+      ctx.translate(position.x, position.y);
+      ctx.rotate(position.angle + Math.PI / 2);
+      ctx.font = racer.isPlayer ? "34px sans-serif" : "30px sans-serif";
+      ctx.fillText(racer.carEmoji, 0, 0);
+      ctx.restore();
+
+      if (racer.isPlayer) {
+        ctx.strokeStyle = "#f97316";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(position.x, position.y, 24, 0, TWO_PI);
+        ctx.stroke();
+      }
+    }
+
+    function drawScene() {
+      drawTrack();
+      racers
+        .slice()
+        .sort((left, right) => getRacerPosition(left).y - getRacerPosition(right).y)
+        .forEach(drawRacer);
     }
 
     function tick() {
       if (running) {
-        movePlayer();
-        if (hasCollidedWithObstacle()) {
-          status.textContent = "Bump! You hit an obstacle. Press Start Race to retry.";
-          running = false;
-        } else if (player.y <= finishY + FINISH_LINE_TOLERANCE) {
-          status.textContent = `🎉 ${selected.emoji} wins!`;
-          running = false;
+        racers.forEach((racer) => {
+          if (racer.isPlayer) {
+            updatePlayer(racer);
+          } else {
+            updateAi(racer);
+          }
+          racer.visualLane += (racer.targetLane - racer.visualLane) * TRACK.laneChangeSpeed;
+        });
+
+        if (!checkForWinner()) {
+          updateStatus();
+          updateLeaderboard();
         }
       }
-      drawTrack();
+
+      drawScene();
       requestAnimationFrame(tick);
     }
 
-    window.addEventListener("keydown", (e) => {
-      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
-        e.preventDefault();
+    function normalizeKey(key) {
+      return key.length === 1 ? key.toLowerCase() : key;
+    }
+
+    window.addEventListener("keydown", (event) => {
+      const key = normalizeKey(event.key);
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(key)) {
+        event.preventDefault();
       }
-      keys.add(e.key);
+
+      if (!event.repeat) {
+        if (key === "ArrowLeft" || key === "a") {
+          steerPlayer(-1);
+        }
+        if (key === "ArrowRight" || key === "d") {
+          steerPlayer(1);
+        }
+      }
+
+      keys.add(key);
     });
-    window.addEventListener("keyup", (e) => keys.delete(e.key));
+
+    window.addEventListener("keyup", (event) => {
+      keys.delete(normalizeKey(event.key));
+    });
+
     startBtn.addEventListener("click", resetRace);
 
     resetRace();
