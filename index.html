@@ -69,11 +69,11 @@
 
   <script>
     const roster = [
-      { label: "Driver A (light skin)", emoji: "🧑🏻" },
-      { label: "Driver B (medium-light skin)", emoji: "🧑🏼" },
-      { label: "Driver C (medium skin)", emoji: "🧑🏽" },
-      { label: "Driver D (medium-dark skin)", emoji: "🧑🏾" },
-      { label: "Driver E (dark skin)", emoji: "🧑🏿" },
+      { label: "Light skin driver", emoji: "🧑🏻" },
+      { label: "Medium-light skin driver", emoji: "🧑🏼" },
+      { label: "Medium skin driver", emoji: "🧑🏽" },
+      { label: "Medium-dark skin driver", emoji: "🧑🏾" },
+      { label: "Dark skin driver", emoji: "🧑🏿" },
       { label: "Robot driver", emoji: "🤖" },
       { label: "Alien driver", emoji: "👽" }
     ];
@@ -155,7 +155,9 @@
     }
 
     function intersectsObstacle() {
-      return obstacles.some((o) => Math.abs(player.x - o.x) < COLLISION_RADIUS && Math.abs(player.y - o.y) < COLLISION_RADIUS);
+      return obstacles.some((obstacle) =>
+        Math.sqrt((player.x - obstacle.x) ** 2 + (player.y - obstacle.y) ** 2) < COLLISION_RADIUS
+      );
     }
 
     function tick() {
