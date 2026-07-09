@@ -195,6 +195,7 @@
             <li>Press <strong>Start Race</strong>.</li>
             <li>Your racer <strong>accelerates automatically</strong>.</li>
             <li>Tap <strong>◀ ▶</strong> buttons (or <strong>← → / A D</strong>) to change lanes.</li>
+            <li>Hold <strong>↑ / W</strong> for full speed; <strong>↓ / S</strong> to brake.</li>
             <li>Dodge 🚧🪨🛢️🐄 — they slow you down!</li>
             <li>Collect ⚡⭐🍄 for a speed boost!</li>
           </ol>
@@ -419,7 +420,7 @@
       const up   = keys.has("ArrowUp")   || keys.has("w");
       const down = keys.has("ArrowDown") || keys.has("s");
 
-      // Always accelerate; holding Up gives full accel, otherwise a gentle auto-accel
+      // Always accelerate; holding Up/W gives full accel, otherwise 70% auto-accel
       player.speed += up ? P_ACCEL : P_ACCEL * 0.7;
       if (down) {
         player.speed -= P_BRAKE;
@@ -770,7 +771,10 @@
         btn.classList.add("pressed");
         steer();
       }, { passive: false });
-      btn.addEventListener("touchend",   e => { e.preventDefault(); btn.classList.remove("pressed"); }, { passive: false });
+      btn.addEventListener("touchend", e => {
+        e.preventDefault();
+        btn.classList.remove("pressed");
+      }, { passive: false });
 
       // Mouse events (desktop fallback)
       btn.addEventListener("mousedown", () => { btn.classList.add("pressed");    steer(); });
