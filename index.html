@@ -206,6 +206,8 @@
     const PLAYER_MAX_SPEED = 0.00228;
     const AI_BASE_SPEED = 0.00146;
     const AI_SPEED_VARIANCE = 0.00026;
+    const AI_MIN_SPEED = 0.0012;
+    const AI_MAX_SPEED_BUFFER = 0.00018;
     const AI_CHANGE_MIN = 80;
     const AI_CHANGE_MAX = 200;
     const TWO_PI = Math.PI * 2;
@@ -247,14 +249,14 @@
       };
     }
 
-    function laneFromAngle(angle) {
-      const normalized = normalizeLapProgress(angle / TWO_PI);
+    function angleFromProgress(progress) {
+      const normalized = normalizeLapProgress(progress);
       return START_ANGLE + normalized * TWO_PI;
     }
 
     function getRacerPosition(racer) {
       const lane = laneMetrics(racer.visualLane);
-      const angle = laneFromAngle(racer.progress);
+      const angle = angleFromProgress(racer.progress);
       return {
         x: TRACK.cx + lane.rx * Math.cos(angle),
         y: TRACK.cy + lane.ry * Math.sin(angle),
@@ -352,7 +354,7 @@
       }
 
       racer.speed += (racer.aiTargetSpeed - racer.speed) * 0.015;
-      racer.speed = clamp(racer.speed, 0.0012, racer.maxSpeed + 0.00018);
+      racer.speed = clamp(racer.speed, AI_MIN_SPEED, racer.maxSpeed + AI_MAX_SPEED_BUFFER);
       racer.progress += racer.speed;
     }
 
@@ -385,8 +387,12 @@
 
       standings.forEach((racer, index) => {
         const entry = document.createElement("div");
+        const title = document.createElement("strong");
+        const meta = document.createElement("span");
         entry.className = `leaderboard-entry${racer.isPlayer ? " player" : ""}`;
-        entry.innerHTML = `<strong>${index + 1}. ${racer.driverEmoji} ${racer.carEmoji}</strong><span>${racer.label} • Lap ${clamp(Math.floor(racer.progress) + 1, 1, TOTAL_LAPS)}</span>`;
+        title.textContent = `${index + 1}. ${racer.driverEmoji} ${racer.carEmoji}`;
+        meta.textContent = `${racer.label} • Lap ${clamp(Math.floor(racer.progress) + 1, 1, TOTAL_LAPS)}`;
+        entry.append(title, meta);
         leaderboard.appendChild(entry);
       });
     }
@@ -520,7 +526,7 @@
     }
 
     function normalizeKey(key) {
-      return key.length === 1 ? key.toLowerCase() : key;
+      return /^[a-z]$/i.test(key) ? key.toLowerCase() : key;
     }
 
     window.addEventListener("keydown", (event) => {
