@@ -229,9 +229,15 @@
 
     // ── Power-up effects ─────────────────────────────────────────────────────
     const HIT_PENALTY  = 0.35;  // speed multiplied by this on obstacle hit
-    const HIT_FRAMES   = 90;    // how long the slowdown effect lasts (frames)
+    const HIT_FRAMES   = 90;    // slowdown duration (~1.5 s at 60 fps)
     const BOOST_MULT   = 1.55;  // max-speed multiplier during boost
-    const BOOST_FRAMES = 180;   // how long the boost lasts (frames)
+    const BOOST_FRAMES = 180;   // boost duration (~3 s at 60 fps)
+
+    // ── Collision thresholds (half-widths in px) ─────────────────────────────
+    const OBS_COLL_X   = 38;   // horizontal reach for obstacle collision
+    const OBS_COLL_Y   = 28;   // vertical reach for obstacle collision
+    const BOOST_COLL_X = 42;   // horizontal reach for boost collection
+    const BOOST_COLL_Y = 32;   // vertical reach for boost collection
 
     // ── Road visuals ─────────────────────────────────────────────────────────
     const DASH_H     = 34;
@@ -247,6 +253,8 @@
     const clamp       = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
     const laneX       = (lane) => ROAD_L + LANE_W * (lane + 0.5);
     const toScreenY   = (wy, playerWY) => PLAYER_SCR_Y - (wy - playerWY) * PPU;
+    // Returns a lane that is different from 'lane' (picks lane+1 or lane+2, mod NUM_LANES)
+    const adjacentLane = (lane) => (lane + 1 + Math.floor(Math.random() * 2)) % NUM_LANES;
     const formatPlace = (n) => {
       if (n % 10 === 1 && n % 100 !== 11) return `${n}st`;
       if (n % 10 === 2 && n % 100 !== 12) return `${n}nd`;
@@ -279,10 +287,9 @@
 
         // Occasionally a second obstacle in a different lane (harder section)
         if (Math.random() < 0.28) {
-          const lane2 = (lane + 1 + Math.floor(Math.random() * 2)) % NUM_LANES;
           obs.push({
             worldY: y,
-            lane: lane2,
+            lane: adjacentLane(lane),
             emoji: OBS_EMOJIS[Math.floor(Math.random() * OBS_EMOJIS.length)],
             active: true
           });
@@ -292,10 +299,9 @@
 
         // Boost placed between this and next obstacle, in a clear lane
         if (Math.random() < 0.55) {
-          const boostLane = (lane + 1 + Math.floor(Math.random() * 2)) % NUM_LANES;
           bst.push({
             worldY: y + step * 0.5,
-            lane: boostLane,
+            lane: adjacentLane(lane),
             emoji: BOOST_EMOJIS[Math.floor(Math.random() * BOOST_EMOJIS.length)],
             active: true
           });
@@ -398,7 +404,7 @@
         if (!obs.active) return;
         const sx = laneX(obs.lane);
         const sy = toScreenY(obs.worldY, player.worldY);
-        if (Math.abs(sx - px) < 38 && Math.abs(sy - PLAYER_SCR_Y) < 28) {
+        if (Math.abs(sx - px) < OBS_COLL_X && Math.abs(sy - PLAYER_SCR_Y) < OBS_COLL_Y) {
           obs.active      = false;
           player.speed   *= HIT_PENALTY;
           player.hitTimer = HIT_FRAMES;
@@ -410,7 +416,7 @@
         if (!bst.active) return;
         const sx = laneX(bst.lane);
         const sy = toScreenY(bst.worldY, player.worldY);
-        if (Math.abs(sx - px) < 42 && Math.abs(sy - PLAYER_SCR_Y) < 32) {
+        if (Math.abs(sx - px) < BOOST_COLL_X && Math.abs(sy - PLAYER_SCR_Y) < BOOST_COLL_Y) {
           bst.active        = false;
           player.boostTimer = BOOST_FRAMES;
         }
@@ -460,10 +466,14 @@
       const standings = getStandings();
       lbEl.innerHTML  = "";
       standings.forEach((r, i) => {
-        const div = document.createElement("div");
-        div.className = "leaderboard-entry" + (r.isPlayer ? " player" : "");
-        const lap = clamp(Math.floor(r.worldY / LAP_DIST) + 1, 1, TOTAL_LAPS);
-        div.innerHTML = `<strong>${i + 1}. ${r.driverEmoji} ${r.carEmoji}</strong><span>${r.label} · Lap ${lap}</span>`;
+        const div    = document.createElement("div");
+        const strong = document.createElement("strong");
+        const span   = document.createElement("span");
+        div.className     = "leaderboard-entry" + (r.isPlayer ? " player" : "");
+        const lap         = clamp(Math.floor(r.worldY / LAP_DIST) + 1, 1, TOTAL_LAPS);
+        strong.textContent = `${i + 1}. ${r.driverEmoji} ${r.carEmoji}`;
+        span.textContent   = `${r.label} · Lap ${lap}`;
+        div.append(strong, span);
         lbEl.appendChild(div);
       });
     }
