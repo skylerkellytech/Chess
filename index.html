@@ -63,7 +63,7 @@
       <button id="startBtn" type="button">Start Race</button>
     </div>
     <canvas id="track" width="720" height="420" aria-label="Race track"></canvas>
-    <p class="hint">Controls: Arrow keys or WASD. Emoji textures: 🌿 🌵 🧱 ☁️.</p>
+    <p class="hint">Controls: Arrow keys or WASD. Obstacles: 🌿 🌵 🧱 ☁️.</p>
     <p class="status" id="status" aria-live="polite"></p>
   </main>
 
@@ -91,16 +91,18 @@
       select.appendChild(option);
     });
 
+    const PLAYER_SPEED = 4;
+    const COLLISION_RADIUS = 18;
     const keys = new Set();
     const obstacleTiles = ["🌿", "🌵", "🧱", "☁️"];
-    let player = { x: canvas.width / 2, y: canvas.height - 50, speed: 4 };
+    let player = { x: canvas.width / 2, y: canvas.height - 50, speed: PLAYER_SPEED };
     let finishY = 40;
     let obstacles = [];
     let selected = roster[0];
     let running = false;
 
     function resetRace() {
-      player = { x: canvas.width / 2, y: canvas.height - 50, speed: 4 };
+      player = { x: canvas.width / 2, y: canvas.height - 50, speed: PLAYER_SPEED };
       selected = roster[Number(select.value)] || roster[0];
       obstacles = Array.from({ length: 12 }, (_, i) => ({
         x: 60 + Math.random() * (canvas.width - 120),
@@ -153,7 +155,7 @@
     }
 
     function intersectsObstacle() {
-      return obstacles.some((o) => Math.abs(player.x - o.x) < 18 && Math.abs(player.y - o.y) < 18);
+      return obstacles.some((o) => Math.abs(player.x - o.x) < COLLISION_RADIUS && Math.abs(player.y - o.y) < COLLISION_RADIUS);
     }
 
     function tick() {
