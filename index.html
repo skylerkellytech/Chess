@@ -70,17 +70,18 @@
 
   <script>
     const roster = [
-      { label: "Track Star", emoji: "🧑🏻" },
-      { label: "Road Runner", emoji: "🧑🏼" },
-      { label: "Turbo Rider", emoji: "🧑🏽" },
-      { label: "Lightning Driver", emoji: "🧑🏾" },
-      { label: "Champion Racer", emoji: "🧑🏿" },
+      { label: "Track Star", emoji: "🧑" },
+      { label: "Road Runner", emoji: "👩" },
+      { label: "Turbo Rider", emoji: "👨" },
+      { label: "Lightning Driver", emoji: "🧕" },
+      { label: "Champion Racer", emoji: "👳" },
       { label: "Robot Driver", emoji: "🤖" },
       { label: "Alien Driver", emoji: "👽" }
     ];
 
     const canvas = document.getElementById("track");
     const ctx = canvas.getContext("2d");
+    const finishLine = "🏁";
     const select = document.getElementById("character");
     const startBtn = document.getElementById("startBtn");
     const status = document.getElementById("status");
@@ -110,6 +111,8 @@
     const obstacleTiles = ["🌿", "🌵", "🧱", "☁️"];
     let player = createPlayer();
     let finishY = FINISH_LINE_Y;
+    ctx.font = "24px sans-serif";
+    const finishLineX = (canvas.width - ctx.measureText(finishLine).width) / 2;
     let obstacles = [];
     let selected = roster[0];
     let running = false;
@@ -145,8 +148,6 @@
 
       ctx.fillStyle = "#f8fafc";
       ctx.font = "24px sans-serif";
-      const finishLine = "🏁";
-      const finishLineX = (canvas.width - ctx.measureText(finishLine).width) / 2;
       ctx.fillText(finishLine, finishLineX, finishY);
 
       ctx.font = "22px sans-serif";
@@ -177,7 +178,7 @@
       return { x: canvas.width / 2, y: canvas.height - PLAYER_START_OFFSET_FROM_BOTTOM, speed: DEFAULT_PLAYER_SPEED };
     }
 
-    function intersectsObstacle() {
+    function hasCollidedWithObstacle() {
       return obstacles.some((obstacle) =>
         (player.x - obstacle.x) ** 2 + (player.y - obstacle.y) ** 2 < COLLISION_DISTANCE_SQUARED
       );
@@ -186,7 +187,7 @@
     function tick() {
       if (running) {
         movePlayer();
-        if (intersectsObstacle()) {
+        if (hasCollidedWithObstacle()) {
           status.textContent = "Bump! You hit an obstacle. Press Start Race to retry.";
           running = false;
         } else if (player.y <= finishY + FINISH_LINE_TOLERANCE) {
