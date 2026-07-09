@@ -50,7 +50,7 @@
       display: block;
       margin: 0 auto .5rem;
     }
-    .hint { margin: 0; color: #94a3b8; font-size: .95rem; }
+    .hint { margin: 0; color: #cbd5e1; font-size: .95rem; }
     .status { min-height: 1.4rem; margin: .25rem 0 0; font-weight: 600; }
   </style>
 </head>
@@ -162,8 +162,12 @@
       if (up) player.y -= player.speed;
       if (down) player.y += player.speed;
 
-      player.x = Math.max(TRACK_SIDE_MARGIN, Math.min(canvas.width - TRACK_SIDE_MARGIN, player.x));
-      player.y = Math.max(TRACK_TOP_MARGIN, Math.min(canvas.height - TRACK_BOTTOM_MARGIN, player.y));
+      player.x = clamp(player.x, TRACK_SIDE_MARGIN, canvas.width - TRACK_SIDE_MARGIN);
+      player.y = clamp(player.y, TRACK_TOP_MARGIN, canvas.height - TRACK_BOTTOM_MARGIN);
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
     }
 
     function intersectsObstacle() {
@@ -187,7 +191,12 @@
       requestAnimationFrame(tick);
     }
 
-    window.addEventListener("keydown", (e) => keys.add(e.key));
+    window.addEventListener("keydown", (e) => {
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+        e.preventDefault();
+      }
+      keys.add(e.key);
+    });
     window.addEventListener("keyup", (e) => keys.delete(e.key));
     startBtn.addEventListener("click", resetRace);
 
